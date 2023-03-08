@@ -1,21 +1,22 @@
 package ir.ehsan.telegram.free.screens.auth
 
+import android.annotation.SuppressLint
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -26,36 +27,36 @@ import ir.ehsan.telegram.free.composables.AppText
 import ir.ehsan.telegram.free.composables.SimpleActionBarLayout
 import ir.ehsan.telegram.free.composables.Spacer
 import ir.ehsan.telegram.free.composables.State
+import ir.ehsan.telegram.free.utils.mergePhoneNumber
+import ir.ehsan.telegram.free.utils.remember
+import kotlinx.coroutines.flow.collect
 
 @RootNavGraph(start = true)
 @Destination()
 @Composable
 fun AuthScreen(
-    navigator: DestinationsNavigator
+    navigator: DestinationsNavigator,
+    authViewModel: AuthViewModel = viewModel()
 ) {
+    val context = LocalContext.current
 
-    var socketConnected by State(false)
+    authViewModel.init(
+        onLoggedIn = {
+
+        },
+        onStepChanged = {
+            Log.e("tag","step changed to : ${it.name}")
+        },
+        onErrorThrown = {
+            Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+        }
+    )
+    val socketConnected by authViewModel.socketConnected.remember().collectAsState(initial = false)
+    val authStep by authViewModel.step.remember().collectAsState(initial = -1)
     var phoneNumber by State("")
+    var phonePrefix by State("+98")
     var stepName = "شماره موبایل"
 
-
-    var socket: Socket? = null
-
-    socket = IO.socket("http://192.168.1.4:3000")
-
-    socket?.on(Socket.EVENT_CONNECT){
-        Log.e("tag","on connection")
-        socketConnected = true
-    }
-    socket?.on(Socket.EVENT_DISCONNECT){
-        Log.e("tag","on disconnect")
-        socketConnected = false
-    }
-    socket?.on(Socket.EVENT_CONNECT_ERROR){
-        Log.e("tag","on connect error: ${it[0]}")
-    }
-
-    socket?.connect()
 
     SimpleActionBarLayout(
         title = if (socketConnected) stepName else "درحال اتصال..."
@@ -107,9 +108,10 @@ fun AuthScreen(
                     backgroundColor = MaterialTheme.colors.secondary
                 ),
                 onClick = {
-                    Log.e("connected",    socket?.connected().toString())
-                    socket?.emit("authPhoneNumber","09146478614")
-
+                    authViewModel.sendPhoneNumber(mergePhoneNumber(
+                        code = phonePrefix,
+                        phoneNumber = phoneNumber
+                    ))
                 }) {
                 AppText("ادامه")
             }
