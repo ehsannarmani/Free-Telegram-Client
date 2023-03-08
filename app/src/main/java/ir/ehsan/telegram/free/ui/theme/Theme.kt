@@ -1,13 +1,19 @@
 package ir.ehsan.telegram.free.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.ButtonColors
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.navigation.compose.rememberNavController
+import ir.ehsan.telegram.free.rememberAppState
 
 val forceDark = true
 
@@ -26,18 +32,21 @@ private val LightColorPalette = lightColors(
     primaryVariant = GreenDark,
     secondary = Green,
 
-)
+    )
 
 @Composable
-fun FreeTelegramTheme(darkTheme: Boolean = isSystemInDarkTheme() || forceDark, content: @Composable () -> Unit) {
+fun FreeTelegramTheme(
+    darkTheme: Boolean = isSystemInDarkTheme() || forceDark,
+    content: @Composable () -> Unit
+) {
     val colors = if (darkTheme) {
         DarkColorPalette
     } else {
         LightColorPalette
     }
-    val customColors = if(darkTheme){
+    val customColors = if (darkTheme) {
         customDarkColors
-    }else{
+    } else {
         customLightColors
     }
 

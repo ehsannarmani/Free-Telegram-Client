@@ -40,26 +40,26 @@ fun App() {
             val authViewModel:AuthViewModel = viewModel()
 
             Scaffold(
-                topBar = {
-                    AnimatedVisibility(
-                        visible = appState.shouldShowAppBar,
-                        enter = slideInVertically() + fadeIn(),
-                        exit = slideOutVertically() + fadeOut()
-                    ) {
-                        TopAppBar(
-                            backgroundColor = MaterialTheme.colors.primary,
-                            title = {
-                                AppText(appState.getAppBarTitle, style = defaultTextStyle.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold))
-                            }
-                        )
-                    }
-                }
+//                topBar = {
+//                    AnimatedVisibility(
+//                        visible = appState.shouldShowAppBar,
+//                        enter = slideInVertically() + fadeIn(),
+//                        exit = slideOutVertically() + fadeOut()
+//                    ) {
+//                        TopAppBar(
+//                            backgroundColor = MaterialTheme.colors.primary,
+//                            title = {
+//                                AppText(appState.getAppBarTitle, style = defaultTextStyle.copy(fontSize = 15.sp, fontWeight = FontWeight.Bold))
+//                            }
+//                        )
+//                    }
+//                }
             ) {
                 Box(modifier= Modifier
                     .fillMaxSize()
                     .animateContentSize(animationSpec = tween(200))){
                     DestinationsNavHost(
-                        navController = appState.navController,
+                        navController = appState.navController!!,
                         navGraph = NavGraphs.root,
                         startRoute = if(authViewModel.userLoggedIn) MainScreenDestination else AuthScreenDestination,
                     )
