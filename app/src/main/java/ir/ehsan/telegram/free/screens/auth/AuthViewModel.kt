@@ -4,10 +4,12 @@ import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import io.socket.client.IO
 import io.socket.client.Socket
+import ir.ehsan.telegram.free.screens.auth.models.AuthData
 import ir.ehsan.telegram.free.screens.auth.models.AuthError
 import ir.ehsan.telegram.free.screens.auth.models.Session
 import ir.ehsan.telegram.free.screens.auth.models.Status
 import ir.ehsan.telegram.free.utils.Constants
+import ir.ehsan.telegram.free.utils.emitWithSerialize
 import ir.ehsan.telegram.free.utils.onWithSerialize
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,18 +24,20 @@ class AuthViewModel: ViewModel(),KoinComponent {
     private val _socketConnected:MutableStateFlow<Boolean> = MutableStateFlow(false)
     val socketConnected = _socketConnected.asStateFlow()
 
-    private val _step = MutableStateFlow(-1)
-    val step = _socketConnected.asStateFlow()
+    private val _step:MutableStateFlow<Int> = MutableStateFlow(-1)
+    val step = _step.asStateFlow()
 
     val userLoggedIn:Boolean get() =
         sharedPreferences.getBoolean(Constants.USER_LOGGED_IN,false)
 
 
     private val EVENT_STATUS = "status"
-    private val EVENT_ERROR = "error"
+    private val EVENT_ERROR = "authError"
     private val EVENT_LOGGED_IN = "loggedIn"
 
     private val EVENT_AUTH_PHONE_NUMBER = "authPhoneNumber"
+    private val EVENT_AUTH_PHONE_CODE = "authPhoneCode"
+    private val EVENT_AUTH_PASSWORD = "authPassword"
     fun init(
         onConnect:()->Unit = {},
         onDisconnect:()->Unit = {},
@@ -41,7 +45,7 @@ class AuthViewModel: ViewModel(),KoinComponent {
         onStepChanged:(Status)->Unit,
         onErrorThrown:(AuthError)->Unit
     ){
-        socket = IO.socket("http://192.168.1.4:3000")
+        socket = IO.socket(Constants.SOCKET_URL)
         socket.connect()
         socket.on(Socket.EVENT_CONNECT){
             _socketConnected.value = true
@@ -66,6 +70,12 @@ class AuthViewModel: ViewModel(),KoinComponent {
     }
     fun sendPhoneNumber(phoneNumber:String){
         socket.emit(EVENT_AUTH_PHONE_NUMBER,phoneNumber)
+    }
+    fun sendPhoneCode(code:String,phoneNumber: String){
+        socket.emitWithSerialize(EVENT_AUTH_PHONE_CODE,AuthData(data = code,phoneNumber))
+    }
+    fun sendPassword(password:String,phoneNumber: String){
+        socket.emitWithSerialize(EVENT_AUTH_PASSWORD,AuthData(data = password,phoneNumber))
     }
 
 

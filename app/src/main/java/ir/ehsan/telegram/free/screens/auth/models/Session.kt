@@ -1,3 +1,8 @@
 package ir.ehsan.telegram.free.screens.auth.models
 
-data class Session(val session:String)
+import com.beust.klaxon.Json
+
+data class Session(
+    @Json("session")
+    val session: String
+)

@@ -34,7 +34,7 @@ object Spacer {
     }
 
     @Composable
-    private fun BaseSpacer(size:Dp,horizontal: Boolean) {
+    fun BaseSpacer(size:Dp,horizontal: Boolean) {
         return Box(
             modifier = Modifier
                 .height(if (horizontal) 0.dp else size)

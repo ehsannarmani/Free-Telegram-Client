@@ -1,5 +1,6 @@
 package ir.ehsan.telegram.free.utils
 
+import android.util.Log
 import com.beust.klaxon.Klaxon
 import io.socket.client.Socket
 
@@ -12,6 +13,12 @@ inline fun <reified T>Socket.onWithSerialize(event:String, crossinline onReceive
             if(parsed != null){
                 onReceive(parsed)
             }
+        }.onFailure {
+            Log.e("tag",it.message.toString())
         }
     }
+}
+
+fun <T : Any>Socket.emitWithSerialize(event: String, data:T){
+    emit(event,Klaxon().toJsonString(data))
 }
