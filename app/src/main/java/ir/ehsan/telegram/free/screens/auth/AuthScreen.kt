@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,11 +55,12 @@ fun AuthScreen(
     val authStep by authViewModel.step.remember().collectAsState(-1)
 
 
-    var stepName = "شماره موبایل"
+    var stepName by State("ورود")
 
     var phoneNumber by State("")
     var phonePrefix by State("+98")
     var phoneCodeError by State(false)
+    var loginSession by State<String?>(null)
 
     val phone = mergePhoneNumber(code = phonePrefix, phoneNumber = phoneNumber)
 
@@ -67,6 +69,7 @@ fun AuthScreen(
             onLoggedIn = { session ->
                 loading = false
                 Log.e("tag", "you are logged in: $session")
+                loginSession = session
             },
             onStepChanged = {
                 loading = false
@@ -99,33 +102,48 @@ fun AuthScreen(
     SimpleActionBarLayout(
         title = if (socketConnected) stepName else "درحال اتصال..."
     ) {
-        AnimatedContent(targetState = authStep) {
-            when (authStep) {
-                -1 -> {
+        Column(){
+            AnimatedContent(targetState = authStep) {
+                when (authStep) {
+                    -1 -> {
 
-                    PhoneNumberStep(
-                        vm = authViewModel,
-                        phoneNumber = phoneNumber,
-                        phonePrefix = phonePrefix,
-                        onPhoneNumberChange = {
-                            phoneNumber = it
-                        }
-                    )
-                }
-                0 -> {
-                    PhoneCodeStep(
-                        vm = authViewModel,
-                        phone = phone,
-                        error = phoneCodeError
-                    )
-                }
-                1 -> {
-                    PasswordStep(
-                        vm = authViewModel,
-                        phone = phone
-                    )
+                        PhoneNumberStep(
+                            vm = authViewModel,
+                            phoneNumber = phoneNumber,
+                            phonePrefix = phonePrefix,
+                            onPhoneNumberChange = {
+                                phoneNumber = it
+                            },
+                            loading = loading,
+                            onLoading = {
+                                loading = true
+                            }
+                        )
+                    }
+                    0 -> {
+                        PhoneCodeStep(
+                            vm = authViewModel,
+                            phone = phone,
+                            error = phoneCodeError,
+                            loading = loading,
+                            onLoading = {
+                                loading = true
+                            }
+                        )
+                    }
+                    1 -> {
+                        PasswordStep(
+                            vm = authViewModel,
+                            phone = phone,
+                            loading = loading,
+                            onLoading = {
+                                loading = true
+                            },
+                        )
+                    }
                 }
             }
+
         }
     }
 }
@@ -135,17 +153,19 @@ fun PhoneNumberStep(
     vm: AuthViewModel,
     phoneNumber: String,
     onPhoneNumberChange: (String) -> Unit,
-    phonePrefix: String
+    phonePrefix: String,
+    loading: Boolean,
+    onLoading: () -> Unit,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize(1f)
             .padding(horizontal = 32.dp),
         verticalArrangement = Arrangement.Center
     ) {
 
         AppText(text = "شماره موبایل خود را وارد کنید:")
-        Spacer.SmallSpacer()
+        Spacer.LargeSpacer()
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             OutlinedTextField(
                 modifier = Modifier.fillMaxWidth(),
@@ -172,25 +192,29 @@ fun PhoneNumberStep(
                 placeholder = {
                     Text("000-000-0000")
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone,),
+                colors = TextFieldDefaults.textFieldColors(
+                    cursorColor = Color.White
+                )
             )
         }
-        Spacer.LargeSpacer()
-        Button(
+        Spacer.VeryLargeSpacer()
+        LoadingButton(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.secondary
-            ),
-            onClick = {
+            content = {
+                AppText("ادامه")
+            },
+            onTap = {
+                onLoading()
                 vm.sendPhoneNumber(
                     mergePhoneNumber(
                         code = phonePrefix,
                         phoneNumber = phoneNumber
                     )
                 )
-            }) {
-            AppText("ادامه")
-        }
+            },
+            loading = loading
+        )
     }
 }
 
@@ -198,18 +222,23 @@ fun PhoneNumberStep(
 fun PhoneCodeStep(
     vm: AuthViewModel,
     phone: String,
-    error: Boolean
+    error: Boolean,
+    loading: Boolean,
+    onLoading: () -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize(1f)
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         AppText("کد ارسال شده را وارد کنید:")
-        Spacer.MediumSpacer()
+        Spacer.LargeSpacer()
         Otp(
             count = 5,
             onFinish = {
+                onLoading()
                 vm.sendPhoneCode(
                     phoneNumber = phone,
                     code = it
@@ -223,29 +252,42 @@ fun PhoneCodeStep(
 @Composable
 fun PasswordStep(
     vm: AuthViewModel,
-    phone: String
+    phone: String,
+    loading: Boolean,
+    onLoading: () -> Unit,
 ) {
     var password by State("")
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize(1f)
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         AppText("حساب شما دارای ورود دو مرحله ای است، رمزعبور خود را وارد کنید:")
-        Spacer.MediumSpacer()
-        TextField(modifier = Modifier.fillMaxWidth(), value = password, onValueChange = {
-            password = it
-        })
         Spacer.LargeSpacer()
-        Button(
+        TextField(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = MaterialTheme.colors.secondary
+            value = password, onValueChange = {
+                password = it
+            },
+            colors = TextFieldDefaults.textFieldColors(
+                cursorColor = Color.White
             ),
-            onClick = {
-                vm.sendPassword(password, phoneNumber = phone)
-            }) {
-            AppText("ورود")
-        }
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        )
+        Spacer.VeryLargeSpacer()
+        LoadingButton(
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                AppText("ادامه")
+            },
+            onTap = {
+                onLoading()
+                vm.sendPassword(password, phone)
+            },
+            loading = loading
+        )
+
     }
 }
